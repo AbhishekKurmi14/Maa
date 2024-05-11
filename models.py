@@ -154,16 +154,16 @@ class FeedbackMessage(Base):
 from sqlalchemy import Column, Integer, Float, ForeignKey
 from sqlalchemy.orm import relationship
 
-class RikshawLocation(Base):
-    __tablename__ = 'rikshaw_location'
+# class RikshawLocation(Base):
+#     __tablename__ = 'rikshaw_location'
 
-    id = Column(Integer, primary_key=True)
-    latitude = Column(Float)
-    longitude = Column(Float)
-    rikshaw_user_id = Column(Integer, ForeignKey('rikshaw_user.id'))
+#     id = Column(Integer, primary_key=True)
+#     latitude = Column(Float)
+#     longitude = Column(Float)
+#     rikshaw_user_id = Column(Integer, ForeignKey('rikshaw_user.id'))
 
-    # Relationship with RikshawUser
-    rikshaw_user = relationship("RikshawUser", back_populates="location")
+#     # Relationship with RikshawUser
+#     rikshaw_user = relationship("RikshawUser", back_populates="location")
 
 from typing import List, Dict
 from pydantic import BaseModel

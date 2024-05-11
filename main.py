@@ -673,36 +673,36 @@ from sqlalchemy.orm import Session
 
 
 # Define the update_location endpoint
-@app.post("/update_location/{id}")
-def update_location(
-    id: int = Path(..., title="Rikshaw User ID", description="The ID of the rikshaw user"),
-    location: schemas.RikshawLocationCreate = Body(..., title="Location", description="The location data to update"),
-    session: Session = Depends(get_db)
-):
-    # Check if the rikshaw user with the provided ID exists
-    rikshaw_user = session.query(models.RikshawUser).filter(models.RikshawUser.id == id).first()
-    if not rikshaw_user:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Rikshaw user not found")
+# @app.post("/update_location/{id}")
+# def update_location(
+#     id: int = Path(..., title="Rikshaw User ID", description="The ID of the rikshaw user"),
+#     location: schemas.RikshawLocationCreate = Body(..., title="Location", description="The location data to update"),
+#     session: Session = Depends(get_db)
+# ):
+#     # Check if the rikshaw user with the provided ID exists
+#     rikshaw_user = session.query(models.RikshawUser).filter(models.RikshawUser.id == id).first()
+#     if not rikshaw_user:
+#         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Rikshaw user not found")
 
-    # Create a new RikshawLocation instance and add it to the session
-    db_location = models.RikshawLocation(**location.dict())
-    session.add(db_location)
-    session.commit()
+#     # Create a new RikshawLocation instance and add it to the session
+#     db_location = models.RikshawLocation(**location.dict())
+#     session.add(db_location)
+#     session.commit()
 
-    return {"message": "Location updated successfully"}
+#     return {"message": "Location updated successfully"}
 
-# Define the get_location endpoint
-@app.get("/get_location/{id}", response_model=schemas.RikshawLocation)
-def get_location(
-    id: int = Path(..., title="Rikshaw User ID", description="The ID of the rikshaw user"),
-    session: Session = Depends(get_db)
-):
-    # Retrieve the rikshaw user's location based on the provided ID
-    location = session.query(models.RikshawLocation).filter(models.RikshawLocation.rikshaw_user_id == id).first()
-    if not location:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Location not found")
+# # Define the get_location endpoint
+# @app.get("/get_location/{id}", response_model=schemas.RikshawLocation)
+# def get_location(
+#     id: int = Path(..., title="Rikshaw User ID", description="The ID of the rikshaw user"),
+#     session: Session = Depends(get_db)
+# ):
+#     # Retrieve the rikshaw user's location based on the provided ID
+#     location = session.query(models.RikshawLocation).filter(models.RikshawLocation.rikshaw_user_id == id).first()
+#     if not location:
+#         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Location not found")
 
-    return location
+#     return location
 
 @app.post('/logout')
 def logout(dependencies=Depends(JWTBearer()), db: Session = Depends(get_db)):
