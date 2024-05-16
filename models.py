@@ -41,10 +41,10 @@ class RikshawUser(Base):
     rikshaw_no = Column(String)
     area = Column(String)
     password = Column(String)
-    name = Column(String)  # Make sure this line is included
+    name = Column(String)
     contact_number = Column(String)
-    # # Define a one-to-one relationship with the Location model
-    # location = relationship("Location", back_populates="rikshaw_user", uselist=False)
+    # Define the relationship here after RikshawLocation class is defined
+    location = relationship("RikshawLocation", back_populates="rikshaw_user", uselist=False)
 
 class Video(Base):
     __tablename__ = "videos"
@@ -154,16 +154,16 @@ class FeedbackMessage(Base):
 from sqlalchemy import Column, Integer, Float, ForeignKey
 from sqlalchemy.orm import relationship
 
-# class RikshawLocation(Base):
-#     __tablename__ = 'rikshaw_location'
+class RikshawLocation(Base):
+    __tablename__ = 'rikshaw_location'
 
-#     id = Column(Integer, primary_key=True)
-#     latitude = Column(Float)
-#     longitude = Column(Float)
-#     rikshaw_user_id = Column(Integer, ForeignKey('rikshaw_user.id'))
+    id = Column(Integer, primary_key=True)
+    latitude = Column(Float)
+    longitude = Column(Float)
+    rikshaw_user_id = Column(Integer, ForeignKey('rikshaw_user.id'))
 
-#     # Relationship with RikshawUser
-#     rikshaw_user = relationship("RikshawUser", back_populates="location")
+    # Define the relationship here
+    rikshaw_user = relationship("RikshawUser", back_populates="location")
 
 from typing import List, Dict
 from pydantic import BaseModel
@@ -173,7 +173,12 @@ class SubscriptionResponse(BaseModel):
     message: str
     data: List[Dict]
 
+class Image(Base):
+    __tablename__ = 'images'
 
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, index=True)
+    s3_url = Column(String, index=True)
 
 
 # class Location(Base):

@@ -98,20 +98,13 @@ class SubscriptionDetails(BaseModel):
         arbitrary_types_allowed = True
 
 
-class RikshawLocationBase(BaseModel):
+class RikshawLocationUpdate(BaseModel):
     latitude: float
     longitude: float
-
-class RikshawLocationCreate(RikshawLocationBase):
-    rikshaw_user_id: int
-
-class RikshawLocation(RikshawLocationBase):
-    id: int
-    rikshaw_user_id: int
-
-    class Config:
-        orm_mode = True
-
+class GetLocationsResponse(BaseModel):
+    status_code: int
+    message: str
+    data: dict
 
 class ContactMessageBase(BaseModel):
     name: str
@@ -141,3 +134,27 @@ class FeedbackMessage(FeedbackMessageBase):
 
     class Config:
         orm_mode = True
+
+class ImageBase(BaseModel):
+    name: str
+
+class ImageCreate(ImageBase):
+    pass
+
+class Image(ImageBase):
+    id: int
+    s3_url: str
+
+    class Config:
+        orm_mode = True
+
+from typing import List, Optional,Dict
+from pydantic import BaseModel
+class ImageInfo(BaseModel):
+    name: str
+    s3_url: str
+
+class OurClientsResponse(BaseModel):
+    status_code: int
+    message: str
+    data: Optional[Dict[str, List[ImageInfo]]]

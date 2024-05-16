@@ -18,6 +18,7 @@ from auth_bearer import JWTBearer
 from functools import wraps
 from utils import create_access_token,create_refresh_token,verify_password,get_hashed_password
 from moviepy.editor import VideoFileClip
+from fastapi.middleware.cors import CORSMiddleware
 
 ACCESS_TOKEN_EXPIRE_MINUTES = 30  # 30 minutes
 REFRESH_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7 # 7 days
@@ -42,7 +43,13 @@ def get_db():
     finally:
         db.close()
 app = FastAPI()
-
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 # Endpoint for user registration
 @app.post("/register")
 def register_user(user: schemas.UserCreate, session: Session = Depends(get_db)):
@@ -672,37 +679,118 @@ from fastapi import HTTPException, Path, Body, Depends
 from sqlalchemy.orm import Session
 
 
-# Define the update_location endpoint
-# @app.post("/update_location/{id}")
-# def update_location(
-#     id: int = Path(..., title="Rikshaw User ID", description="The ID of the rikshaw user"),
-#     location: schemas.RikshawLocationCreate = Body(..., title="Location", description="The location data to update"),
-#     session: Session = Depends(get_db)
-# ):
-#     # Check if the rikshaw user with the provided ID exists
-#     rikshaw_user = session.query(models.RikshawUser).filter(models.RikshawUser.id == id).first()
-#     if not rikshaw_user:
-#         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Rikshaw user not found")
+@app.post("/update_location/{id}", response_model=schemas.RikshawLocationUpdate)
+def update_location(
+    id: int = Path(..., title="Rikshaw User ID", description="The ID of the rikshaw user"),
+    location: schemas.RikshawLocationUpdate = Body(..., title="Location", description="The location data to update"),
+    session: Session = Depends(get_db)
+):
+    # Check if the rikshaw user with the provided ID exists
+    rikshaw_user = session.query(models.RikshawUser).filter(models.RikshawUser.id == id).first()
+    if not rikshaw_user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Rikshaw user not found")
 
-#     # Create a new RikshawLocation instance and add it to the session
-#     db_location = models.RikshawLocation(**location.dict())
-#     session.add(db_location)
-#     session.commit()
+    # Check if the location entry for the user ID already exists
+    existing_location = session.query(models.RikshawLocation).filter(models.RikshawLocation.rikshaw_user_id == id).first()
+    if existing_location:
+        # Update the existing location entry
+        existing_location.latitude = location.latitude
+        existing_location.longitude = location.longitude
+        session.commit()
+        return {
+            "latitude": existing_location.latitude,
+            "longitude": existing_location.longitude,
+            "rikshaw_user_id": existing_location.rikshaw_user_id
+        }
+    else:
+        # Create a new location entry
+        db_location = models.RikshawLocation(
+            latitude=location.latitude,
+            longitude=location.longitude,
+            rikshaw_user_id=id
+        )
+        session.add(db_location)
+        session.commit()
+        return {
+            "latitude": db_location.latitude,
+            "longitude": db_location.longitude,
+            "rikshaw_user_id": db_location.rikshaw_user_id
+        }
 
-#     return {"message": "Location updated successfully"}
+# Define the get_location endpoint
+@app.get("/get_all_locations", response_model=schemas.GetLocationsResponse)
+def get_all_locations(session: Session = Depends(get_db)):
+    # Retrieve all location records from the database
+    locations = session.query(models.RikshawLocation).all()
+    if not locations:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No locations found")
 
-# # Define the get_location endpoint
-# @app.get("/get_location/{id}", response_model=schemas.RikshawLocation)
-# def get_location(
-#     id: int = Path(..., title="Rikshaw User ID", description="The ID of the rikshaw user"),
-#     session: Session = Depends(get_db)
-# ):
-#     # Retrieve the rikshaw user's location based on the provided ID
-#     location = session.query(models.RikshawLocation).filter(models.RikshawLocation.rikshaw_user_id == id).first()
-#     if not location:
-#         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Location not found")
+    # Prepare the response data
+    data = [{"id": loc.id, "rikshaw_user_id": loc.rikshaw_user_id, "latitude": loc.latitude, "longitude": loc.longitude} for loc in locations]
 
-#     return location
+    # Prepare the response
+    response = {
+        "status_code": status.HTTP_200_OK,
+        "message": "Location update",
+        "data": {
+            "locations": data
+        }
+    }
+    return response
+
+import boto3
+from botocore.exceptions import ClientError
+from fastapi import FastAPI, UploadFile, File, Form, HTTPException, status, Depends
+
+# Configure AWS credentials
+AWS_ACCESS_KEY_ID = 'AKIA2UC3BSG7WK7KCY5D'
+AWS_SECRET_ACCESS_KEY = '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'
+AWS_REGION = 'ap-south-1'
+
+s3_client = boto3.client('s3', aws_access_key_id=AWS_ACCESS_KEY_ID, aws_secret_access_key=AWS_SECRET_ACCESS_KEY, region_name=AWS_REGION)
+S3_BUCKET_NAME = 'pro-2'
+
+def upload_image_to_s3(image: UploadFile, name: str, session: Session):
+    try:
+        # Upload image to S3
+        s3_response = s3_client.upload_fileobj(image.file, S3_BUCKET_NAME, image.filename)
+        # Get the S3 URL of the uploaded image
+        s3_url = f"https://{S3_BUCKET_NAME}.s3.{AWS_REGION}.amazonaws.com/{image.filename}"
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to upload image to S3")
+
+    # Save data to the database
+    try:
+        db_data = models.Image(name=name, s3_url=s3_url)
+        session.add(db_data)
+        session.commit()
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to save data to database")
+
+    return {"message": "Image uploaded successfully", "s3_url": s3_url}
+
+# Define the API endpoint
+@app.post("/our_client/")
+def our_client(image: UploadFile = File(...), name: str = Form(...), session: Session = Depends(get_db)):
+    return upload_image_to_s3(image, name, session)
+
+@app.get("/our_clients/", response_model=schemas.OurClientsResponse)
+def get_our_clients(session: Session = Depends(get_db)):
+    # Query the database to get the image data
+    images = session.query(models.Image).all()
+    
+    # Format the response
+    response_data = {
+        "status_code": status.HTTP_200_OK,
+        "message": "Location update",
+        "data": {
+            "our_clients": [{"name": image.name, "s3_url": image.s3_url} for image in images]
+        }
+    }
+    
+    return response_data
+
+
 
 @app.post('/logout')
 def logout(dependencies=Depends(JWTBearer()), db: Session = Depends(get_db)):
