@@ -89,6 +89,7 @@ class Subscription(Base):
     __tablename__ = "subscriptions"
     id = Column(Integer, primary_key=True, index=True)
     amount = Column(String)
+    offerPrice = Column(String)
     month = Column(String)
     month_type = Column(String)
     sub_id = Column(String)

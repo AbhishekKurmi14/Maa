@@ -535,7 +535,7 @@ async def calculate_subscription_details(user_id: int, sub_id: str, session: Ses
         "sub_id": sub_id,
         "start_date": current_date,
         "end_date": end_date,
-        "total_price": subscription.amount,
+        "total_price": subscription.offerPrice,
         "no_of_play": 0,
         "plan_type": subscription.month,
         "status": "Paid"
@@ -599,7 +599,7 @@ async def get_user_subscriptions(user_id: int, session: Session = Depends(get_db
                 "sub_id": subscription.sub_id,
                 "start_date": start_date,
                 "end_date": end_date,
-                "total_price": subscription.amount,
+                "total_price": subscription.offerPrice,
                 "no_of_play": 0,  # You may need to update this value based on your logic
                 "plan_type": subscription.month,
                 "status": user_subscription.status

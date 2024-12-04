@@ -60,6 +60,7 @@ class Video(VideoBase):
 
 class Subscription(BaseModel):
     amount : int
+    offerPrice: int
     month: int
     month_type: str
     sub_id: str
